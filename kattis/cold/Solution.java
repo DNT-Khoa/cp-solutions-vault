@@ -13,7 +13,7 @@ public class Solution {
         int count = 0;
         StringTokenizer st = new StringTokenizer(br.readLine());
         for (int i = 0; i < N; i++) {
-            if (Integer.valueOf(st.nextToken()) < 0) {
+            if (Integer.parseInt(st.nextToken()) < 0) {
                 count++;
             }
         }

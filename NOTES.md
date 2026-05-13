@@ -27,7 +27,7 @@ If yes, the answer factors into `(rows-thing) × (cols-thing)`.
 
 ### Other problems where the same flip works
 - "Count cells where row sum > 0 OR col sum > 0" → flip to "row sum ≤ 0 AND col sum ≤ 0" → multiply.
-- "Count cells `(i,j)` where `a[i] != b[j]`" → flip to `a[i] == b[j]`.
+- "Count pairs `(i,j)` where `a[i]` is even OR `b[j]` is even" → flip to "`a[i]` odd AND `b[j]` odd" → (# odd `a[i]`) × (# odd `b[j]`).
 - "Place a non-attacking rook" → safe squares = (empty rows) × (empty cols).
 
 ### Two-line summary

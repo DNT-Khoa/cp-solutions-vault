@@ -1,5 +1,10 @@
 # Competitive Programming Patterns
 
+## Contents
+
+- [Histogram Shift = Sorting](#histogram-shift--sorting)
+- [Complementary Counting + Row/Col Independence](#complementary-counting--rowcol-independence)
+
 ## Histogram Shift = Sorting
 When you shift/rotate/apply gravity to a histogram (columns of boxes), the result is equivalent to sorting the column heights.
 - Example: shifting all boxes right → sort heights ascending

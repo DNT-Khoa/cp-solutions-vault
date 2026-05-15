@@ -1,22 +1,51 @@
-# cp-solutions-vault
+# 🏔️ cp-solutions-vault
 
-A collection of competitive programming solutions in Java.
+> ⚔️ My personal stash of competitive programming solutions in **Java**, plus notes on the patterns and tricks behind them — kept for my own later reference.
 
-## Structure
+---
+
+## 📚 The Knowledge Base
+
+The two most important files in this repo — read these, not just the solutions:
+
+| File | What's inside |
+|------|---------------|
+| 🧩 **[PATTERNS.md](PATTERNS.md)** | Reusable **algorithmic** patterns — the "aha" ideas that recur across problems (complementary counting, histogram-shift = sorting, …). |
+| ☕ **[JAVA_NOTES.md](JAVA_NOTES.md)** | **Java-specific** idioms & gotchas for CP — `StringBuilder`, int vs. long, always-positive modulo, `Set`-based dedup, … |
+
+Each has a 📑 Table of Contents up top for quick jumping. Every entry links back to the problem that motivated it. 🔗
+
+---
+
+## 🗂️ Repository Layout
 
 ```
-codeforces/   — Codeforces problem solutions
-kattis/       — Kattis problem solutions
-leetcode/     — LeetCode problem solutions
-playground/   — Scratch space for testing ideas
+🏔️ cp-solutions-vault/
+├── 🧩 PATTERNS.md        ← algorithmic patterns catalog
+├── ☕ JAVA_NOTES.md      ← Java idioms & gotchas catalog
+├── 🟦 codeforces/        ← Codeforces solutions
+├── 🟧 kattis/            ← Kattis solutions
+├── 🟨 leetcode/          ← LeetCode solutions
+└── 🧪 playground/        ← scratch space for testing ideas
 ```
 
-Each problem has its own directory containing:
+---
 
-- `Solution.java` — the solution
-- `*.in` — sample input files
-- `notes.md` — problem link and notes
+## 🧱 Anatomy of a Problem
 
-## Tooling
+Every problem lives in its own directory (e.g. `codeforces/204642H/`):
 
-This project uses [KestrelCP](https://github.com/DNT-Khoa/kestrelcp) to scaffold problem directories, run tests, and manage solutions.
+| File | Role |
+|------|------|
+| ☕ `Solution.java` | The solution |
+| 📥 `*.in` | Sample input files |
+| 📤 `*.out` | Expected output files |
+| 📝 `notes.md` | Problem link + any problem-specific notes |
+
+> 💡 Deep explanations live in the **root catalogs**, not in `notes.md` — the per-problem note is usually just a link and stays lean.
+
+---
+
+## 🛠️ Tooling
+
+Scaffolding, test-running, and solution management are powered by 🦅 **[KestrelCP](https://github.com/DNT-Khoa/kestrelcp)** — it spins up problem directories, fetches samples, and runs tests so the focus stays on *solving*. 🚀

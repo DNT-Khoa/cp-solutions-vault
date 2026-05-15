@@ -6,7 +6,7 @@
 
 ## 📚 The Knowledge Base
 
-The two most important files in this repo — read these, not just the solutions:
+The two distilled catalogs at the root:
 
 | File | What's inside |
 |------|---------------|

@@ -8,6 +8,8 @@ Language- and library-level notes for competitive programming in Java. These are
 - [Picking the right integer type](#picking-the-right-integer-type)
 - [Always-positive modulo](#always-positive-modulo)
 - [Counting unique combinations with a `Set`](#counting-unique-combinations-with-a-set)
+- [Stream output instead of accumulating it](#stream-output-instead-of-accumulating-it)
+- [`setLength` vs `deleteCharAt` for backtracking undo](#setlength-vs-deletecharat-for-backtracking-undo)
 
 ## When to use `StringBuilder`
 
@@ -36,16 +38,7 @@ String s = sb.toString();   // one final copy
 
 ### When to reach for it
 
-- **Building output**: collecting many numbers/words before printing. Print once at the end via `pw.print(sb)` — much faster than many `println` calls.
-
-  ```java
-  StringBuilder sb = new StringBuilder();
-  for (int q = 0; q < queries; q++) {
-      sb.append(solve(q)).append('\n');
-  }
-  pw.print(sb);   // single flush instead of `queries` separate println calls
-  ```
-
+- **Assembling one line / token sequence**: building a single output line from many pieces (numbers + delimiters) before printing it — the O(n²) reason above applies to that line. For *whole-program* output, don't accumulate; stream it (see [Stream output instead of accumulating it](#stream-output-instead-of-accumulating-it)). Accumulate the full output only to reorder/post-process it, or when the sink is unbuffered.
 - **Mutating a string**: inserting, deleting, or replacing characters at specific positions (`sb.insert(i, c)`, `sb.deleteCharAt(i)`, `sb.setCharAt(i, c)`).
 - **Reversing a string**: `new StringBuilder(s).reverse().toString()`.
 - **Reading the string into a mutable form**: `StringBuilder sb = new StringBuilder(inputStr);` skips having to convert through `char[]` or `List<Character>`.
@@ -181,3 +174,43 @@ s.size();                 // 2, not 1 — silent wrong answer
 Use a `record` (value-based), a packed `long` (`Set<Long>`, for small bounded values), or `List<Integer>` (its `equals`/`hashCode` are content-based) instead.
 
 Related problem: [204642H](codeforces/204642H/notes.md) — union of valid lock combinations counted via `Set<Triple>`.
+
+## Stream output instead of accumulating it
+
+`new PrintWriter(System.out)` **already wraps the stream in a `BufferedWriter`** (8 KB buffer) and does not autoflush. So writing each line the moment you produce it — `pw.println(line)` in a loop or at a recursion leaf — is *already* batched I/O: the buffer fills and flushes in big chunks, and one `pw.close()` at the end does the final flush.
+
+Collecting the whole output into a `StringBuilder` or `List<String>` first does **not** make it faster — the batching already happened. It only adds O(total output) memory on top of the buffer that's already there, plus a giant temporary `String` (`pw.print(sb)` does `String.valueOf(sb)` before writing).
+
+```java
+// don't: accumulate the whole output just to print it
+StringBuilder sb = new StringBuilder();
+for (int q = 0; q < queries; q++) {
+    sb.append(solve(q)).append('\n');
+}
+pw.print(sb);   // O(total) memory + one huge temp String, no speed gain
+
+// do: emit each line as you produce it — same flushes, O(1) extra memory
+for (int q = 0; q < queries; q++) {
+    pw.println(solve(q));
+}
+// (recursion leaf is the same idea: pw.println(path); return;)
+```
+
+Concrete cost: "print all `N!` permutations" with an accumulator holds every line at once and runs out of memory (`OutOfMemoryError`, "OOM" for short) at `N = 10` (~3.6M lines) even under a 64 MB heap; the streaming version above stays at O(N) and runs fine. Reach for a full-output accumulator only when you must **reorder or post-process** everything before printing — never just to "print fast". If you emit in generation order, stream it.
+
+Related problem: [205012A](codeforces/205012A/notes.md) — the `StringBuilder` and `List<String>` versions OOM'd at `N = 10`; streaming straight to `pw` did not.
+
+## `setLength` vs `deleteCharAt` for backtracking undo
+
+When undoing a `StringBuilder` append during backtracking, snapshot the length *before* appending and restore it after:
+
+```java
+int mark = sb.length();
+sb.append(x);          // x may render as 1 char or many
+recurse();
+sb.setLength(mark);    // drops exactly what was added, whatever its length
+```
+
+`sb.deleteCharAt(sb.length() - 1)` removes exactly **one** character. That only mirrors the append while every appended value is a single character. Append a two-digit number (10, 11, …), or a value plus a separator, and the undo removes too little — the buffer never unwinds, the path silently corrupts, and in the worst case it grows until OOM. `setLength(mark)` rewinds to a known-good point no matter how many characters the append produced, so it's the default undo for the [backtracking pattern](PATTERNS.md#backtracking-choose--recurse--un-choose).
+
+Related problem: [205012A](codeforces/205012A/notes.md) — `deleteCharAt` passed for `N ≤ 9` but corrupted the path at `N ≥ 10` where values are two digits.

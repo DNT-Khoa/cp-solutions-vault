@@ -4,7 +4,7 @@
 
 - [Histogram Shift = Sorting](#histogram-shift--sorting)
 - [Complementary Counting + Row/Col Independence](#complementary-counting--rowcol-independence)
-- [Backtracking: choose / recurse / un-choose](#backtracking-choose--recurse--un-choose)
+- [Backtracking: one template, the choice set is the pattern](#backtracking-one-template-the-choice-set-is-the-pattern)
 
 ## Histogram Shift = Sorting
 When you shift/rotate/apply gravity to a histogram (columns of boxes), the result is equivalent to sorting the column heights.
@@ -42,28 +42,66 @@ If yes, the answer factors into `(rows-thing) × (cols-thing)`.
 
 - Related problem: [204642C](codeforces/204642C/notes.md)
 
-## Backtracking: choose / recurse / un-choose
+## Backtracking: one template, the choice set is the pattern
 
-To enumerate every arrangement (permutations, subsets, combinations, placements), build one partial solution and walk a decision tree. At each node, for every candidate: **choose** it (mark used + add to the path), **recurse**, then **un-choose** it (undo both). Choose and un-choose must mirror each other exactly — that symmetry is the entire pattern.
+Every backtracking enumeration — subset, permutation, combination, k-digit string, N-queens — is the *same* function. One line changes.
 
 ```java
-for (int num = 1; num <= N; num++) {
-    if (!used[num]) {
-        int mark = path.length();
-        used[num] = true;          // choose
-        path.append(num);
-        recurse(depth + 1);
-        path.setLength(mark);      // un-choose — exact mirror of the two choose lines
-        used[num] = false;
+void dfs(int k, State state) {
+    if (k == numDecisions) {                  // leaf = one complete object
+        if (accept(state)) record(state);
+        return;
+    }
+    for (Choice c : candidates(k, state)) {   // ← the only pattern-specific line
+        dfs(k + 1, apply(state, c));
     }
 }
 ```
 
-Iterating candidates in ascending order makes the output come out in lexicographic order for free.
+The recursion, base case, and "advance to `k+1`" are boilerplate. What each slot means:
 
-Track progress with a separate `depth` counter and end on `depth == N` — **not** `path.length()`. Length counts *characters*, which only equals *numbers placed* while every value is one digit; the moment a value reaches 10 the two diverge and the base case never fires. Keeping "how far am I" separate from "what does it render as" is what makes the pattern survive multi-digit values. (See [`setLength` vs `deleteCharAt` for backtracking undo](JAVA_NOTES.md#setlength-vs-deletecharat-for-backtracking-undo) for why the undo uses `setLength`.)
+- `k` — which decision you're on (also the recursion depth), `0 … numDecisions-1`.
+- `numDecisions` — how many decisions make one complete object (`n` items, `n` slots, …).
+- `state` — the partial object so far (a running sum, the path, a `used[]` set).
+- `candidates(k, state)` — the legal choices for decision `k` given `state`. **This line alone is the pattern.**
+- `apply(state, c)` — `state` after taking choice `c` (pass a new value down, or mutate it).
+- `accept` / `record` — at a leaf: is the finished object valid, and what to do with it (print / count / store).
 
-### N = 3 trace
-Candidates 1, 2, 3. Fix 1, then 2, then 3 → emit `123`; un-choose 3 and 2; fix 3 then 2 → `132`; back up to the root, fix 2 first → `213`, `231`; then 3 first → `312`, `321`. Output in lexicographic order: `123, 132, 213, 231, 312, 321`.
+**A pattern's whole identity is `candidates(k, state)`** — *what are the legal choices for the next decision, given what's built so far?* The table is examples, not a taxonomy; the real tool is that question:
 
-Related problem: [205012A](codeforces/205012A/notes.md) — generate all permutations of `1..N`.
+| pattern | `candidates(k, state)` |
+|---|---|
+| subset / include-exclude | `{exclude, include}` item `k` — always 2 |
+| permutation | values not yet used — n, n−1, … |
+| combination | values with index **>** the last picked |
+| k-digit base-b string | `0 … b−1` |
+| N-queens | columns no current queen attacks |
+
+### Worked: 205012B (subset / include-exclude, counting)
+Fill the template in: `numDecisions = n+m` players; `state` = the two team sums; `candidates(k)` = {exclude, include player `k`}; `apply` = add the skill to that player's team (pass-down); `accept` = both teams non-empty and equal; to *count*, return `0/1` at the leaf and **sum the branches** (every leaf is a distinct lineup, so they add — don't `max`).
+
+```java
+long dfs(int k, long eSum, long sSum) {                   // state = (eSum, sSum)
+    if (k == n + m)                                       // k == numDecisions → leaf
+        return (eSum > 0 && sSum > 0 && eSum == sSum) ? 1 : 0;   // accept ? 1 : 0
+    long inc = (k < n) ? dfs(k + 1, eSum + skill[k], sSum)       // include → apply
+                       : dfs(k + 1, eSum, sSum + skill[k]);      //  (pass down)
+    long exc = dfs(k + 1, eSum, sSum);                           // exclude
+    return inc + exc;                                            // count = sum branches
+}
+```
+
+Same skeleton as the generic one above — only `candidates` (include/exclude) and `apply` (which sum grows) are filled in.
+
+### Orthogonal axis: how state is carried
+Independent of *which* pattern, `apply(state, c)` has two styles — same tree either way:
+
+- **Pass down (functional):** build the new value, hand it to the child, no undo. `205012B` above: `dfs(k+1, eSum + skill[k], sSum)`.
+- **Mutate + undo:** change shared state, recurse, then restore it — *choose → recurse → un-choose*, where the undo lines mirror the choose lines exactly. Used when state is awkward to copy (e.g. a `used[]` array, as in permutations).
+
+Pick by what's cheap to copy: a scalar (`sum`) → pass down; a `used[]` array → mutate + undo. This is a *state-handling* choice, **not** what makes a pattern a subset vs a permutation.
+
+### Items `[A, B]` — concrete
+Subset DFS → 4 leaves: `{}`, `{B}`, `{A}`, `{A,B}` (each item in/out). Permutation DFS → 2 leaves: `[A,B]`, `[B,A]` (`candidates` shrinks 2 → 1). Same tree depth; the `candidates` line is the only difference.
+
+Related problems: [205012B](codeforces/205012B/notes.md) — count equal-strength lineups (subset / pass-down, worked above); [205012A](codeforces/205012A/notes.md) — all permutations of `1..N` (permutation / mutate+undo; iterating candidates in ascending order makes the output lexicographic).

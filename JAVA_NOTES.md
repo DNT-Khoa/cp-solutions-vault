@@ -211,6 +211,6 @@ recurse();
 sb.setLength(mark);    // drops exactly what was added, whatever its length
 ```
 
-`sb.deleteCharAt(sb.length() - 1)` removes exactly **one** character. That only mirrors the append while every appended value is a single character. Append a two-digit number (10, 11, …), or a value plus a separator, and the undo removes too little — the buffer never unwinds, the path silently corrupts, and in the worst case it grows until OOM. `setLength(mark)` rewinds to a known-good point no matter how many characters the append produced, so it's the default undo for the [backtracking pattern](PATTERNS.md#backtracking-choose--recurse--un-choose).
+`sb.deleteCharAt(sb.length() - 1)` removes exactly **one** character. That only mirrors the append while every appended value is a single character. Append a two-digit number (10, 11, …), or a value plus a separator, and the undo removes too little — the buffer never unwinds, the path silently corrupts, and in the worst case it grows until OOM. `setLength(mark)` rewinds to a known-good point no matter how many characters the append produced, so it's the default undo for the mutate+undo style of the [backtracking pattern](PATTERNS.md#backtracking-one-template-the-choice-set-is-the-pattern).
 
 Related problem: [205012A](codeforces/205012A/notes.md) — `deleteCharAt` passed for `N ≤ 9` but corrupted the path at `N ≥ 10` where values are two digits.

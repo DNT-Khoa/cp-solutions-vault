@@ -72,6 +72,7 @@ The recursion, base case, and "advance to `k+1`" are boilerplate. What each slot
 | pattern | `candidates(k, state)` |
 |---|---|
 | subset / include-exclude | `{exclude, include}` item `k` — always 2 |
+| partition into k groups | which of the k groups item `k` joins; skip full ones |
 | permutation | values not yet used — n, n−1, … |
 | combination | values with index **>** the last picked |
 | k-digit base-b string | `0 … b−1` |
@@ -104,4 +105,19 @@ Pick by what's cheap to copy: a scalar (`sum`) → pass down; a `used[]` array �
 ### Items `[A, B]` — concrete
 Subset DFS → 4 leaves: `{}`, `{B}`, `{A}`, `{A,B}` (each item in/out). Permutation DFS → 2 leaves: `[A,B]`, `[B,A]` (`candidates` shrinks 2 → 1). Same tree depth; the `candidates` line is the only difference.
 
-Related problems: [205012B](codeforces/205012B/notes.md) — count equal-strength lineups (subset / pass-down, worked above); [205012A](codeforces/205012A/notes.md) — all permutations of `1..N` (permutation / mutate+undo; iterating candidates in ascending order makes the output lexicographic).
+### Fixed order vs permuting (why no `used[]`)
+
+**Rule:** if order *within* a group doesn't matter, walk items in a fixed order and, for each item, choose **which group it joins** — not **which item comes next**.
+
+**Why — tiny example.** Split 4 items `A B C D` into 2 teams of 2.
+
+- *Permuting items into slots* (slots 1–2 = team 1, slots 3–4 = team 2): team `{A,B}` is built by both `AB|..` and `BA|..`. The 2 items inside a team reorder `2!` ways, in each of 2 teams, so every real split is generated `2!·2! = 4` times. That's `4! = 24` orderings but only `24 / 4 = 6` real splits.
+- *Walking in fixed order* (`A`, then `B`, …) and only choosing each item's **team**: a team's members always appear in input order, so a split is generated exactly once. No `used[]` needed — `used[]` exists only for permutations, where order genuinely matters.
+
+**Payoff (205012C).** 12 cows → 4 teams of 3. "Cow `k` picks a team, skip a team already holding 3" visits `12! / (3!)⁴ ≈ 3.7×10⁵` leaves. Permuting cows instead visits `12! ≈ 4.8×10⁸` — the same splits, each duplicated `(3!)⁴` times.
+
+### Related problems
+
+- [205012B](codeforces/205012B/notes.md) — count equal-strength lineups. *Subset; pass-down state; worked above.*
+- [205012A](codeforces/205012A/notes.md) — all permutations of `1..N`. *Permutation; mutate+undo; ascending candidates ⇒ lexicographic output.*
+- [205012C](codeforces/205012C/notes.md) — split 12 cows into 4 teams of 3. *Partition; `teamCount` cap prunes `4¹² → 12!/(3!)⁴`.*

@@ -5,6 +5,7 @@
 - [Histogram Shift = Sorting](#histogram-shift--sorting)
 - [Complementary Counting + Row/Col Independence](#complementary-counting--rowcol-independence)
 - [Backtracking: one template, the choice set is the pattern](#backtracking-one-template-the-choice-set-is-the-pattern)
+- [Binary Search on Doubles: fixed loop, not while](#binary-search-on-doubles-fixed-loop-not-while)
 
 ## Histogram Shift = Sorting
 When you shift/rotate/apply gravity to a histogram (columns of boxes), the result is equivalent to sorting the column heights.
@@ -121,3 +122,25 @@ Subset DFS → 4 leaves: `{}`, `{B}`, `{A}`, `{A,B}` (each item in/out). Permuta
 - [205012B](codeforces/205012B/notes.md) — count equal-strength lineups. *Subset; pass-down state; worked above.*
 - [205012A](codeforces/205012A/notes.md) — all permutations of `1..N`. *Permutation; mutate+undo; ascending candidates ⇒ lexicographic output.*
 - [205012C](codeforces/205012C/notes.md) — split 12 cows into 4 teams of 3. *Partition; `teamCount` cap prunes `4¹² → 12!/(3!)⁴`.*
+
+## Binary Search on Doubles: fixed loop, not while
+
+When the answer is a **real number** (a length, a rate, a ratio) instead of an integer, binary-search the answer — but the loop changes shape.
+
+**Why the integer `while` breaks.** A `double` stores only ~16 significant digits — a fixed length. Every time you split the range, `l` and `r` get closer together, so `mid` differs from them only further out in the decimals — it needs *more* digits to write down. Eventually it needs more than 16: the extra digits get rounded off, and `(l + r) / 2` rounds back to exactly `l` or `r`. Now `mid` equals an endpoint, so `l = mid` (or `r = mid`) doesn't change anything — and a `while (r - l > eps)` loop (`eps` = a precision you'd have to pick, e.g. `1e-6`) **spins forever**. This bites when the answer is large (more digits used up before the point, fewer left for splitting) and the precision is tight.
+
+**The fix: loop a fixed number of times.** Each step halves the range, so after a fixed count the range is a single point — no termination condition to get stuck on, and **no `eps` to choose** (you'd rarely know the right one anyway).
+
+```java
+double l = 0, r = maxAns;          // maxAns = largest the answer could be
+for (int i = 0; i < 100; i++) {    // 100 halvings — can't hang, always enough
+    double mid = (l + r) / 2;
+    if (f(mid)) l = mid;           // mid works → answer is in [mid, r]
+    else        r = mid;           // mid fails → answer is in [l, mid]
+}
+// l ≈ r ≈ the answer
+```
+
+**Why 100.** Each iteration halves the interval: `8 → 4 → 2 → 1 → 0.5 → ...`. After `n` steps the range is `maxAns / 2ⁿ`. You want that below your precision `eps`, i.e. `maxAns / 2ⁿ ≤ eps`. Solving for `n` gives `n ≥ log2(maxAns / eps)` — that's where the formula comes from. With `maxAns ≈ 1e9` and `eps ≈ 1e-9` that's only ~60, so 100 halvings clears any sane case: "just write 100 and don't think."
+
+> **`e` notation.** `1e9` means `1 × 10⁹` (move the decimal 9 places right) = `1000_000_000`. A negative exponent moves left: `1e-9` = `0.000000001`, `1e-6` = `0.000001`. It's just shorthand for big/small numbers, and is valid Java for `double` literals (`double eps = 1e-9;`).

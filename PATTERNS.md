@@ -5,6 +5,7 @@
 - [Histogram Shift = Sorting](#histogram-shift--sorting)
 - [Complementary Counting + Row/Col Independence](#complementary-counting--rowcol-independence)
 - [Backtracking: one template, the choice set is the pattern](#backtracking-one-template-the-choice-set-is-the-pattern)
+- [Binary Search: which bound holds the answer](#binary-search-which-bound-holds-the-answer)
 - [Binary Search on Doubles: fixed loop, not while](#binary-search-on-doubles-fixed-loop-not-while)
 
 ## Histogram Shift = Sorting
@@ -123,6 +124,23 @@ Subset DFS → 4 leaves: `{}`, `{B}`, `{A}`, `{A,B}` (each item in/out). Permuta
 - [205012A](codeforces/205012A/notes.md) — all permutations of `1..N`. *Permutation; mutate+undo; ascending candidates ⇒ lexicographic output.*
 - [205012C](codeforces/205012C/notes.md) — split 12 cows into 4 teams of 3. *Partition; `teamCount` cap prunes `4¹² → 12!/(3!)⁴`.*
 
+## Binary Search: which bound holds the answer
+
+The target always sits **between** `left` and `right`. The bound you **return** is the one that lands on it — so that bound must start on a valid value. The other bound is just a sentinel.
+
+Which bound to return depends on which side `f` is true:
+
+| `f` pattern | target is in | return | bounds |
+|---|---|---|---|
+| false → true | `(left, right]` | `right` | `right` starts ≥ target; `left` is throwaway (`-1` is fine) |
+| true → false | `[left, right)` | `left` | `left` starts ≤ target **and valid** (`0`, not `-1`); `right` is throwaway |
+
+So: pick the predicate direction, find which bound converges onto the target — that's your answer, and only *that* bound's starting value has to be real.
+
+**Trap:** return `left` but start it at `-1`, and if the search never hits a feasible `mid` (e.g. a tiny answer) you hand back `-1`. The returned bound must start valid.
+
+Related: [283932A](codeforces/283932A/notes.md) returns `right` (`left = -1` fine) · [283932B](codeforces/283932B/notes.md) returns `left` (needed `left = 0`).
+
 ## Binary Search on Doubles: fixed loop, not while
 
 When the answer is a **real number** (a length, a rate, a ratio) instead of an integer, binary-search the answer — but the loop changes shape.
@@ -144,3 +162,7 @@ for (int i = 0; i < 100; i++) {    // 100 halvings — can't hang, always enough
 **Why 100.** Each iteration halves the interval: `8 → 4 → 2 → 1 → 0.5 → ...`. After `n` steps the range is `maxAns / 2ⁿ`. You want that below your precision `eps`, i.e. `maxAns / 2ⁿ ≤ eps`. Solving for `n` gives `n ≥ log2(maxAns / eps)` — that's where the formula comes from. With `maxAns ≈ 1e9` and `eps ≈ 1e-9` that's only ~60, so 100 halvings clears any sane case: "just write 100 and don't think."
 
 > **`e` notation.** `1e9` means `1 × 10⁹` (move the decimal 9 places right) = `1000_000_000`. A negative exponent moves left: `1e-9` = `0.000000001`, `1e-6` = `0.000001`. It's just shorthand for big/small numbers, and is valid Java for `double` literals (`double eps = 1e-9;`).
+
+**Choosing `l` and `r`.** The loop needs `f(l)` true and `f(r)` false. Pick bounds you know land on those sides — don't blindly copy `l = -1, r = N+1` from integer search. For a length, the domain is `(0, maxAns]`, so use `l = 0` (true) and `r = maxAns + 1` (false). `l = -1` is a trap: `f(-1)` is false (negative length), so when the answer is tiny, `mid` gets dragged negative, `l` never moves, and you `return -1`.
+
+Related problem: [283932B](codeforces/283932B/notes.md) — rope cutting; `l = -1` failed the small-answer test.

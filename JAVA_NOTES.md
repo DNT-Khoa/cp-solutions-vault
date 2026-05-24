@@ -10,6 +10,7 @@ Language- and library-level notes for competitive programming in Java. These are
 - [Counting unique combinations with a `Set`](#counting-unique-combinations-with-a-set)
 - [Stream output instead of accumulating it](#stream-output-instead-of-accumulating-it)
 - [`setLength` vs `deleteCharAt` for backtracking undo](#setlength-vs-deletecharat-for-backtracking-undo)
+- [Printing doubles: avoid scientific notation](#printing-doubles-avoid-scientific-notation)
 
 ## When to use `StringBuilder`
 
@@ -214,3 +215,28 @@ sb.setLength(mark);    // drops exactly what was added, whatever its length
 `sb.deleteCharAt(sb.length() - 1)` removes exactly **one** character. That only mirrors the append while every appended value is a single character. Append a two-digit number (10, 11, …), or a value plus a separator, and the undo removes too little — the buffer never unwinds, the path silently corrupts, and in the worst case it grows until OOM. `setLength(mark)` rewinds to a known-good point no matter how many characters the append produced, so it's the default undo for the mutate+undo style of the [backtracking pattern](PATTERNS.md#backtracking-one-template-the-choice-set-is-the-pattern).
 
 Related problem: [205012A](codeforces/205012A/notes.md) — `deleteCharAt` passed for `N ≤ 9` but corrupted the path at `N ≥ 10` where values are two digits.
+
+## Printing doubles: avoid scientific notation
+
+When the answer is a `double`, print it with `printf`, **not** `println`:
+
+```java
+pw.printf("%.6f%n", ans);   // 1000000000.000000
+// not: pw.println(ans);    // 1.0E9  ← checker can't read this
+```
+
+### Why `println` fails
+
+`System.out.println(double)` (and `String.valueOf(double)`) switch to **scientific notation** for values `≥ 10⁷` or `< 10⁻³`. So an answer of `1000000000.0` prints as `1.0E9`. Competitive judges read the answer with a strict real-number parser (Codeforces uses **testlib**, whose `readDouble` rejects the `E`), so a perfectly correct value gets marked wrong purely on format.
+
+The bug hides on small samples — `200.5` prints fine either way — and only surfaces when a test has a large answer.
+
+### What the format string means
+
+`"%.6f%n"` → `.6` = six digits after the decimal point, `f` = fixed-point (the part that kills scientific notation), `%n` = newline (`printf` does *not* add one like `println` does).
+
+### Picking the precision
+
+Match or exceed the problem's stated tolerance. `%.6f` rounds to 6 decimals, giving absolute error `≤ 5 × 10⁻⁷` — safe for the common "error `≤ 10⁻⁶`" requirement. Printing a couple extra digits (`%.9f`) costs nothing (the checker reads the value, not the digit count) and removes any doubt.
+
+Related problem: [283932B](codeforces/283932B/notes.md) — rope-cutting answer up to `10⁹` printed as `1.0E9` with `println`; `printf("%.6f%n", …)` fixed it. Pairs with the [binary search on doubles](PATTERNS.md#binary-search-on-doubles-fixed-loop-not-while) pattern.

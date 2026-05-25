@@ -11,6 +11,7 @@ Language- and library-level notes for competitive programming in Java. These are
 - [Stream output instead of accumulating it](#stream-output-instead-of-accumulating-it)
 - [`setLength` vs `deleteCharAt` for backtracking undo](#setlength-vs-deletecharat-for-backtracking-undo)
 - [Printing doubles: avoid scientific notation](#printing-doubles-avoid-scientific-notation)
+- [`boolean[]` vs `HashSet<Integer>` for dense-index membership](#boolean-vs-hashsetinteger-for-dense-index-membership)
 
 ## When to use `StringBuilder`
 
@@ -240,3 +241,44 @@ The bug hides on small samples — `200.5` prints fine either way — and only s
 Match or exceed the problem's stated tolerance. `%.6f` rounds to 6 decimals, giving absolute error `≤ 5 × 10⁻⁷` — safe for the common "error `≤ 10⁻⁶`" requirement. Printing a couple extra digits (`%.9f`) costs nothing (the checker reads the value, not the digit count) and removes any doubt.
 
 Related problem: [283932B](codeforces/283932B/notes.md) — rope-cutting answer up to `10⁹` printed as `1.0E9` with `println`; `printf("%.6f%n", …)` fixed it. Pairs with the [binary search on doubles](PATTERNS.md#binary-search-on-doubles-fixed-loop-not-while) pattern.
+
+## `boolean[]` vs `HashSet<Integer>` for dense-index membership
+
+When the things you're tracking are indices into a known range `0 … n-1` (or any dense, bounded set of `int`s), use a `boolean[]` for membership — **not** a `HashSet<Integer>`. Both are O(1) per lookup and O(n) space *on paper*, but the constant factors differ by ~5× in time and ~20× in memory.
+
+```java
+boolean[] excluded = new boolean[n];   // index it directly
+excluded[idx] = true;
+if (excluded[i]) { ... }
+```
+
+```java
+Set<Integer> excluded = new HashSet<>();  // boxes every int
+excluded.add(idx);
+if (excluded.contains(i)) { ... }
+```
+
+### Why the same Big-O hides such different numbers
+
+Big-O tells you how cost *grows* with input; the constant factor is the cost *per step*. The swap above doesn't change the growth curve — it slashes the cost of each step:
+
+- **No autoboxing.** `HashSet<Integer>` can't hold primitive `int`, so every `add`/`contains` wraps it in an `Integer` object (a heap allocation for values > 127). `boolean[]` stores raw bits inline.
+- **Direct index vs. hashing.** `excluded[i]` is one address computation + one read. `contains(i)` hashes the `Integer`, finds a bucket, then walks bucket entries comparing with `.equals`.
+- **Cache locality.** A `boolean[]` is one contiguous block (1 byte/slot) — cache-friendly to scan. A `HashSet`'s `Integer` objects and `Node` wrappers (~40-50 bytes/entry) are scattered across the heap, so each lookup tends to miss cache.
+
+Mental model: an array says *"I know exactly where `i` lives — go there."* A hash set says *"I don't know where `i` is — let me compute a guess and search."* When your keys are already `0 … n-1`, the array's assumption is free.
+
+### Concrete numbers
+
+Same problem, same O(n·log n) algorithm, only the membership structure changed:
+
+| Structure | Time | Memory |
+|---|---|---|
+| `HashSet<Integer>` | 1703 ms | 18200 KB |
+| `boolean[]` | 312 ms | 900 KB |
+
+On Codeforces this can be the whole difference between AC and TLE — two correct same-complexity solutions separated purely by constants.
+
+One gotcha when you allocate the `boolean[]` inside a function called many times (e.g. each binary-search probe): a fresh `new boolean[n]` per call is fine for correctness but adds an O(n) allocation each time. If it's hot, allocate once outside and reset only the slots you set.
+
+Related problem: [283932F](codeforces/283932F/notes.md) — `canDelete` membership test; `HashSet<Integer>` → `boolean[]` took it from 1703 ms to 312 ms. Pairs with the [binary search on the answer](PATTERNS.md) pattern.

@@ -126,20 +126,18 @@ Subset DFS → 4 leaves: `{}`, `{B}`, `{A}`, `{A,B}` (each item in/out). Permuta
 
 ## Binary Search: which bound holds the answer
 
-The target always sits **between** `left` and `right`. The bound you **return** is the one that lands on it — so that bound must start on a valid value. The other bound is just a sentinel.
+A binary search keeps two bounds, `left` and `right`, that close in on the answer; when the loop ends they're adjacent. The target sits **between** them, so one of the two *is* the answer. The bound you **return** lands on the target; the other stops strictly past it. Set *both* deliberately.
 
-Which bound to return depends on which side `f` is true:
+`f` is a monotone yes/no test, so the line splits into a *fail* region and a *pass* region; the answer is the boundary, and the two final bounds straddle it. **Return whichever the question asks for** — the smallest value that passes, or the largest. The other bound is the **outer sentinel**, and it is *not* arbitrary: it must (a) genuinely evaluate to its side — the test really fails there — and (b) sit strictly beyond the target, so the answer always stays bracketed.
 
-| `f` pattern | target is in | return | bounds |
-|---|---|---|---|
-| false → true | `(left, right]` | `right` | `right` starts ≥ target; `left` is throwaway (`-1` is fine) |
-| true → false | `[left, right)` | `left` | `left` starts ≤ target **and valid** (`0`, not `-1`); `right` is throwaway |
+*Which* side passes is your choice — negating the predicate flips it — so match the update to it:
 
-So: pick the predicate direction, find which bound converges onto the target — that's your answer, and only *that* bound's starting value has to be real.
+| you return | loop update | the other (outer) bound must |
+|---|---|---|
+| `right` — smallest passing value | `if (f(mid)) right = mid; else left = mid;` | be `left`: fails the test **and** strictly *below* the smallest possible answer |
+| `left` — largest passing value | `if (f(mid)) left = mid; else right = mid;` | be `right`: fails the test **and** strictly *above* the largest possible answer |
 
-**Trap:** return `left` but start it at `-1`, and if the search never hits a feasible `mid` (e.g. a tiny answer) you hand back `-1`. The returned bound must start valid.
-
-Related: [283932A](codeforces/283932A/notes.md) returns `right` (`left = -1` fine) · [283932B](codeforces/283932B/notes.md) returns `left` (needed `left = 0`).
+Don't reuse `-1` / `N+1` by reflex — the right sentinel depends on `f`:
 
 ## Binary Search on Doubles: fixed loop, not while
 

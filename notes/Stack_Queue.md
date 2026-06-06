@@ -248,4 +248,8 @@ O(N) total — each element is enqueued, drained, and dequeued at most once each
 
 - [LeetCode 239 — Sliding Window Maximum](https://leetcode.com/problems/sliding-window-maximum/) — fixed-size window.
 - [LeetCode 1438 — Longest Continuous Subarray With Absolute Diff ≤ Limit](https://leetcode.com/problems/longest-continuous-subarray-with-absolute-diff-less-than-or-equal-to-limit/) — variable-size window with `max − min ≤ k`.
+- [LeetCode 2762 — Continuous Subarrays](https://leetcode.com/problems/continuous-subarrays/) — count subarrays with `|max − min| ≤ 2`. Same pattern as 1438, just counting instead of measuring length.
+- [LeetCode 2398 — Maximum Number of Robots Within Budget](https://leetcode.com/problems/maximum-number-of-robots-within-budget/) — variable-size window where the constraint combines window max and window sum.
+- [LeetCode 1696 — Jump Game VI](https://leetcode.com/problems/jump-game-vi/) — DP where each `dp[i]` needs the max of the previous `k` dp values; sliding window max as a DP accelerator.
+- [LeetCode 1425 — Constrained Subsequence Sum](https://leetcode.com/problems/constrained-subsequence-sum/) — same DP-accelerator pattern as 1696.
 - [Codeforces EDU 307093F — Segments with Small Spread](https://codeforces.com/edu/course/2/lesson/9/2/practice/contest/307093/problem/F) — count segments with `max − min ≤ k`.

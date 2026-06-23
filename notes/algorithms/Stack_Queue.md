@@ -9,6 +9,8 @@ Tricks for augmenting stacks and queues so they answer running queries (min, max
   - [Stack with O(1) running min / max](#stack-with-o1-running-min--max)
   - [Two stacks simulate a queue](#two-stacks-simulate-a-queue)
   - [Min / max queue from two augmented stacks](#min--max-queue-from-two-augmented-stacks)
+  - [Monotonic stack](#monotonic-stack)
+  - [Monotonic deque (sliding-window min / max)](#monotonic-deque-sliding-window-min--max)
 - [Problems for further practice](#problems-for-further-practice)
 
 ## Java implementations
@@ -233,6 +235,108 @@ for right in 0..N-1:
 
 O(N) total — each element is enqueued, drained, and dequeued at most once each.
 
+### Monotonic stack
+
+A stack whose values are kept in a fixed monotonic order — typically strictly decreasing from bottom to top. When a new value arrives, pop everything at the top that it dominates, then push it. Popped elements never return.
+
+#### Use case
+
+For each index `i`, find the nearest index `j` on one side with a strictly greater (or smaller) value. Classic: "next greater element to the right," "previous smaller to the left."
+
+#### The rule (for "next greater to the right")
+
+Stack stores **indices** still waiting for an answer.
+
+```
+for i in 0..N-1:
+    while not stack.empty() and nums[stack.top()] < nums[i]:
+        j = stack.pop()
+        nextGreater[j] = i        // i is j's answer
+    stack.push(i)
+// anything left on the stack has no greater element to the right
+```
+
+#### Concrete example — `nums = [2, 1, 3]`
+
+| i | nums[i] | action | stack (bot→top, by index) | nextGreater so far |
+|---|---------|--------|---------------------------|--------------------|
+| 0 | 2 | push 0 | `[0]` | `[?, ?, ?]` |
+| 1 | 1 | `nums[0]=2 < 1`? No. push 1. | `[0, 1]` | `[?, ?, ?]` |
+| 2 | 3 | `nums[1]=1 < 3`? Yes, pop 1 → ans[1]=2. `nums[0]=2 < 3`? Yes, pop 0 → ans[0]=2. push 2. | `[2]` | `[2, 2, ?]` |
+
+Index 2 has no greater element to its right, so it stays unmatched on the stack.
+
+#### Key intuition
+
+When a bigger value shows up, every smaller index still on the stack is *resolved forever* — its answer is the current element. None of them need to wait any longer, so we pop them all in one sweep. Each index is pushed once and popped once → **O(N) total**.
+
+Flip the comparator for "next smaller" or mirror the iteration direction (right-to-left) for "previous greater / smaller."
+
+#### Cost
+
+| Operation | Time |
+|-----------|------|
+| Full sweep | O(N) |
+
+Space: O(N) for the stack.
+
+### Monotonic deque (sliding-window min / max)
+
+A monotonic stack with **two ends**. The back works exactly like a monotonic stack — pop dominated elements when a new one arrives. The front is used to **drop elements that aged out of the window**.
+
+Stores **indices** (not values) so we can test window membership.
+
+#### The rule (for sliding window max, window size `k`)
+
+Deque of indices, kept so that `nums[index]` is **strictly decreasing from front to back**.
+
+```
+for right in 0..N-1:
+    // 1. maintain monotonic invariant via the back
+    while not dq.empty() and nums[dq.back()] <= nums[right]:
+        dq.popBack()
+    dq.pushBack(right)
+
+    // 2. drop the front if it's expired
+    if dq.front() <= right - k:
+        dq.popFront()
+
+    // 3. record answer once window is full
+    if right >= k - 1:
+        result[right - k + 1] = nums[dq.front()]
+```
+
+For sliding window **min**, flip the comparator: pop while `nums[back] >= nums[right]`. The invariant becomes strictly increasing.
+
+#### Concrete example — `nums = [1, 3, -1, -3, 5, 3]`, `k = 3`
+
+Deque shown as `[index(value), ...]` front→back.
+
+| right | num | back-pop & push | front-drop | dq | window max |
+|-------|-----|-----------------|------------|----|------------|
+| 0 | 1  | push 0 | — | `[0(1)]` | — |
+| 1 | 3  | pop 0 (1≤3), push 1 | — | `[1(3)]` | — |
+| 2 | -1 | push 2 | — | `[1(3), 2(-1)]` | **3** |
+| 3 | -3 | push 3 | — | `[1(3), 2(-1), 3(-3)]` | **3** |
+| 4 | 5  | pop 3, 2, 1 (all ≤ 5), push 4 | — | `[4(5)]` | **5** |
+| 5 | 3  | push 5 | — | `[4(5), 5(3)]` | **5** |
+
+#### Key intuition
+
+- **Why decreasing?** When `x` arrives and a smaller value `y` already sits in the deque, `y` is dominated by `x` for the entire remaining time `y` is in the window — toss it.
+- **Why store indices?** Need to know whether the front still belongs to `[right - k + 1, right]`. Values alone can't tell you that.
+- **Why the front is always the max:** after the back-popping step, every survivor older than any given index has a strictly greater value (otherwise it would have been popped). The oldest survivor is therefore the largest.
+
+#### Cost
+
+| Operation | Time |
+|-----------|------|
+| Full sweep | O(N) amortized |
+
+Each index is pushed and popped at most once.
+
+Space: O(K) — the deque holds at most one index per active window slot.
+
 ## Problems for further practice
 
 ### Min / max stack (augmented stack)
@@ -243,6 +347,13 @@ O(N) total — each element is enqueued, drained, and dequeued at most once each
 ### Two-stack queue
 
 - [LeetCode 232 — Implement Queue using Stacks](https://leetcode.com/problems/implement-queue-using-stacks/)
+
+### Monotonic stack
+
+- [LeetCode 496 — Next Greater Element I](https://leetcode.com/problems/next-greater-element-i/)
+- [LeetCode 739 — Daily Temperatures](https://leetcode.com/problems/daily-temperatures/) — same pattern, returns the distance instead of the value.
+- [LeetCode 503 — Next Greater Element II](https://leetcode.com/problems/next-greater-element-ii/) — circular array; iterate twice.
+- [LeetCode 84 — Largest Rectangle in Histogram](https://leetcode.com/problems/largest-rectangle-in-histogram/) — for each bar, find nearest smaller on left and right.
 
 ### Sliding window min / max
 

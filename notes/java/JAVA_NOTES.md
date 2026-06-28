@@ -8,6 +8,7 @@ Language- and library-level notes for competitive programming in Java. These are
 - [Picking the right integer type](#picking-the-right-integer-type)
 - [Always-positive modulo](#always-positive-modulo)
 - [Counting unique combinations with a `Set`](#counting-unique-combinations-with-a-set)
+- [Value-based vs identity-based `equals`](#value-based-vs-identity-based-equals)
 - [Stream output instead of accumulating it](#stream-output-instead-of-accumulating-it)
 - [`setLength` vs `deleteCharAt` for backtracking undo](#setlength-vs-deletecharat-for-backtracking-undo)
 - [Printing doubles: avoid scientific notation](#printing-doubles-avoid-scientific-notation)
@@ -176,6 +177,41 @@ s.size();                 // 2, not 1 — silent wrong answer
 Use a `record` (value-based), a packed `long` (`Set<Long>`, for small bounded values), or `List<Integer>` (its `equals`/`hashCode` are content-based) instead.
 
 Related problem: [204642H](codeforces/204642H/notes.md) — union of valid lock combinations counted via `Set<Triple>`.
+
+## Value-based vs identity-based `equals`
+
+Default `equals` / `hashCode` inherited from `Object` are **identity-based** — two instances with the same data are NOT equal unless the class overrides these:
+
+```java
+class Point { int x, y; }
+Point p1 = new Point(); p1.x = 1; p1.y = 2;
+Point p2 = new Point(); p2.x = 1; p2.y = 2;
+p1.equals(p2);   // FALSE — Object's default compares references
+```
+
+But the `List` interface **contract** *requires* implementations to override `equals` and `hashCode` to be content-based:
+
+> Two lists are equal iff they contain the same elements in the same order.
+
+So every standard `List` — `ArrayList`, `LinkedList`, `List.of(...)`, `Arrays.asList(...)` — compares by contents and is interchangeable as a Set/Map key:
+
+```java
+List<Integer> a = new ArrayList<>(List.of(-1, 0, 1));
+List<Integer> b = List.of(-1, 0, 1);   // different concrete class
+a.equals(b);                           // TRUE
+a.hashCode() == b.hashCode();          // TRUE
+```
+
+`Set` and `Map` interfaces carry the same contract. Other built-in types that override to be content-based: `Integer`, `Long`, `Double`, `String`, `BigInteger`, `LocalDate`, and every `record`.
+
+### Still identity-based — watch out for
+
+- **Arrays** (`int[]`, `Integer[]`, `String[]`, …) — they're `Object`s with no override, so `Set<int[]>` does not deduplicate (see [Counting unique combinations with a `Set`](#counting-unique-combinations-with-a-set)).
+- **Plain user-defined `class`** — unless you write the override yourself or declare it as a `record`.
+
+### Why this matters
+
+A `Set<List<Integer>>` deduplicates triplets correctly when each triplet is stored as `List.of(a, b, c)` in a canonical (e.g. sorted) order — no manual dedup logic needed. Slower than skipping duplicates inline, but a clean fallback when the in-loop dedup is tricky to get right.
 
 ## Stream output instead of accumulating it
 

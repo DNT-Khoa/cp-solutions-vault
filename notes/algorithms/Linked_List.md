@@ -151,25 +151,51 @@ return p;
 **Why phase 2 works.** Picture:
 
 ```
-                cycle start
-                     ↓
+      cycle start
+           ↓
    1 → 2 → 3 → 4 → 5 → 6 → 7
-               ↑___________|
+           ↑_______________|
 ```
 
-Let `L` = head → cycle start (here 2), `C` = cycle length (here 5), `X` = cycle start → meeting point going forward around the cycle.
+Define three distances:
+- `a` = head → cycle start (here 2).
+- `L` = cycle length (here 5).
+- `b` = cycle start → meeting point, going forward around the cycle.
 
-When they meet, slow has walked `L + X` steps and fast has walked `2(L + X)`. Fast's extra `L + X` steps must be an integer number of laps: `L + X = k·C`, so `L = k·C − X`.
+**Decompose each pointer's total distance at the moment they meet.**
 
-The key reading: **from the meeting point, going `L` more steps around the cycle lands on the cycle start** (going `k·C − X` steps forward = going `−X` steps mod `C` = arriving at the cycle start).
+Both start at head, both end at the meeting point. So both must have covered exactly `a` steps to reach the cycle start, then some number of complete laps around the cycle, then `b` more steps to reach the meeting point:
 
-So in phase 2:
-- `p` starts at `head`, walks `L` steps → arrives at cycle start.
-- `slow` starts at the meeting point, walks `L` steps → also arrives at cycle start.
+- `slowDist = a + x·L + b`
+- `fastDist = a + y·L + b`
 
-Both move one step at a time, so they meet exactly there.
+where `x` is how many complete laps slow did (≥ 0) and `y` is how many complete laps fast did (also ≥ 0, larger than `x` since fast walked more).
 
-Numeric check on the picture: `L = 2, X = 3, C = 5`. From the meeting node (6), walk 2 → `6 → 7 → 3`. From head (1), walk 2 → `1 → 2 → 3`. Both land on node 3, the cycle start. ✓
+**Now plug in `fastDist = 2 · slowDist`:**
+
+```
+a + y·L + b = 2(a + x·L + b)
+    y·L − 2·x·L = a + b
+    (y − 2x)·L = a + b
+    a = (y − 2x)·L − b
+```
+
+Read the last equation as a **walking recipe** starting from the meeting point:
+- Walk `(y − 2x)·L` steps forward — a whole number of laps, which lands you right back on the meeting point.
+- Then walk `−b` more (i.e., `b` steps backward).
+- The meeting point is exactly `b` steps *forward* from the cycle start (that's how we defined `b`), so walking `b` backward from it lands on the **cycle start**.
+
+So walking `a` steps forward from the meeting point ends at the cycle start.
+
+**In phase 2:**
+- `p` starts at `head`. After `a` steps, `p` is at the cycle start (by definition of `a`).
+- `slow` starts at the meeting point. After `a` steps, `slow` is at the cycle start (by the equation).
+
+Both move one step at a time, so they arrive together, at the cycle start.
+
+**Numeric check on the picture** (`a = 2, L = 5`). From the simulation, slow walked 5 steps (`x = 0`), fast walked 10 (`y = 1`), meeting at node 6. So `b = 3`. Verify the equation: `a = (y − 2x)·L − b = (1 − 0)·5 − 3 = 2`. ✓
+
+From the meeting node (6), walk 2 → `6 → 7 → 3`. From head (1), walk 2 → `1 → 2 → 3`. Both land on node 3, the cycle start. ✓
 
 Time O(n), space O(1).
 

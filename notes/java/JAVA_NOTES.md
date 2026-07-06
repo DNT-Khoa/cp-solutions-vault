@@ -13,6 +13,8 @@ Language- and library-level notes for competitive programming in Java. These are
 - [`setLength` vs `deleteCharAt` for backtracking undo](#setlength-vs-deletecharat-for-backtracking-undo)
 - [Printing doubles: avoid scientific notation](#printing-doubles-avoid-scientific-notation)
 - [`boolean[]` vs `HashSet<Integer>` for dense-index membership](#boolean-vs-hashsetinteger-for-dense-index-membership)
+- [Converting a `List<T>` to a `T[]` array](#converting-a-listt-to-a-t-array)
+- [Converting a `T[]` array to a `List<T>`](#converting-a-t-array-to-a-listt)
 
 ## When to use `StringBuilder`
 
@@ -318,3 +320,74 @@ On Codeforces this can be the whole difference between AC and TLE — two correc
 One gotcha when you allocate the `boolean[]` inside a function called many times (e.g. each binary-search probe): a fresh `new boolean[n]` per call is fine for correctness but adds an O(n) allocation each time. If it's hot, allocate once outside and reset only the slots you set.
 
 Related problem: [283932F](codeforces/283932F/notes.md) — `canDelete` membership test; `HashSet<Integer>` → `boolean[]` took it from 1703 ms to 312 ms. Pairs with the [binary search on the answer](PATTERNS.md) pattern.
+
+## Converting a `List<T>` to a `T[]` array
+
+Use `list.toArray(new T[0])`:
+
+```java
+List<ListNode> temp = new ArrayList<>();
+// ... fill temp ...
+ListNode[] arr = temp.toArray(new ListNode[0]);   // real ListNode[]
+```
+
+### Why the array argument is needed
+
+Java arrays are **reified** — an array knows its component type at runtime (`ListNode[].class`, `Object[].class`, etc.). But generic types are **erased**, so at runtime `List<ListNode>` has no idea its elements are `ListNode`s; it just holds `Object`s.
+
+That's why `list.toArray()` (no arg) returns `Object[]`, and casting it to `ListNode[]` throws `ClassCastException`:
+
+```java
+ListNode[] arr = (ListNode[]) temp.toArray();   // ClassCastException at runtime
+```
+
+The overload `toArray(T[] a)` fixes this by using the *runtime class of the passed array* as a witness for what type to allocate. `new ListNode[0]` carries `ListNode[].class`, so `toArray` returns a genuine `ListNode[]`.
+
+### Why `new T[0]` and not `new T[list.size()]`
+
+Both work — if the passed array is too small (which `new T[0]` always is), `toArray` allocates a fresh, correctly-sized one and returns that; if it fits, `toArray` fills it in and returns it.
+
+Old Java advice was to pre-size (`new T[list.size()]`) to skip the allocation. Modern JVMs actually make `new T[0]` slightly faster: the JIT recognizes the empty-array pattern, and empty arrays are cheap. IntelliJ and SonarQube now flag the sized form and suggest rewriting to `[0]`.
+
+Rule of thumb: **always `list.toArray(new T[0])`**.
+
+Related problem: [merge-k-sorted-lists](../../leetcode/merge-k-sorted-lists/notes.md) — bottom-up merge that rebuilds a `ListNode[]` from an `ArrayList` between rounds.
+
+## Converting a `T[]` array to a `List<T>`
+
+Use `Arrays.asList(arr)`:
+
+```java
+ListNode[] arr = { new ListNode(1), new ListNode(2), new ListNode(3) };
+List<ListNode> list = Arrays.asList(arr);
+```
+
+### What you get
+
+A **fixed-size** list backed by the array:
+- `list.get(i)` and `list.set(i, v)` work — `set` writes through to the underlying array.
+- `list.add(x)` and `list.remove(i)` throw `UnsupportedOperationException`.
+
+If you need a fully modifiable list (add/remove allowed), copy into an `ArrayList`:
+
+```java
+List<ListNode> list = new ArrayList<>(Arrays.asList(arr));   // independent, modifiable
+```
+
+### Primitive-array gotcha
+
+`Arrays.asList` doesn't unbox primitives. Passing an `int[]` doesn't give you a `List<Integer>` — the varargs collapse the whole array into a **single element**:
+
+```java
+int[] arr = {1, 2, 3};
+List<int[]> weird = Arrays.asList(arr);   // size 1, one int[] element inside
+weird.size();                              // 1, not 3
+```
+
+For a real `List<Integer>` from an `int[]`, use a stream:
+
+```java
+List<Integer> list = Arrays.stream(arr).boxed().toList();
+```
+
+This shows up any time you want List methods (`indexOf`, `subList`, `contains`) or need to pass the array to a `Collection`-taking API.

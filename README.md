@@ -10,8 +10,8 @@ The distilled knowledge lives under **[notes/](notes/)**, one file per topic, sp
 
 | Where | What's inside |
 |-------|---------------|
-| 🧩 **[notes/algorithms/](notes/algorithms/)** | Algorithmic patterns & data-structure tricks — the recurring "aha" ideas (e.g. [Staircase Search](notes/algorithms/Staircase_Search.md), [Binary Search on the Answer](notes/algorithms/Binary_Search_Boundary.md), [Stack & Queue](notes/algorithms/Stack_Queue.md), [Heap & PriorityQueue](notes/algorithms/Heap_PriorityQueue.md), [Tree Construction from Traversals](notes/algorithms/Tree_Construction_From_Traversals.md)). |
-| ☕ **[notes/java/](notes/java/)** | **Java-specific** idioms & gotchas for CP (e.g. [JAVA_NOTES.md](notes/java/JAVA_NOTES.md)). |
+| 🧩 **[notes/algorithms/](notes/algorithms/)** | Algorithmic patterns & data-structure tricks — the recurring "aha" ideas (e.g. [Staircase Search](notes/algorithms/Staircase_Search.md), [Binary Search on the Answer](notes/algorithms/Binary_Search_Boundary.md), [Stack & Queue](notes/algorithms/Stack_Queue.md), [Heap & PriorityQueue](notes/algorithms/Heap_PriorityQueue.md), [Linked List](notes/algorithms/Linked_List.md), [Tree Construction from Traversals](notes/algorithms/Tree_Construction_From_Traversals.md)). |
+| ☕ **[notes/java/](notes/java/)** | **Java-specific** idioms & gotchas for CP (e.g. [JAVA_NOTES.md](notes/java/JAVA_NOTES.md), [HashMap](notes/java/HashMap.md), [Sorting & Comparators](notes/java/Sorting_Comparators.md)). |
 
 Each file has a 📑 Table of Contents up top for quick jumping. Every entry links back to the problem that motivated it. 🔗
 
